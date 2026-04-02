@@ -1,0 +1,118 @@
+	1.1) Fer una funció existeix_usuari(qUsuari int) returns boolean 
+	       Rebrà un identificador d’usuari 
+	       Si l’usuari no existeix retornarà false
+	       Si l’usuari existeix retornarà true
+
+
+CREATE OR REPLACE FUNCTION existeix_usuari(qUsuari int) returns boolean AS $$
+BEGIN 
+IF EXISTS (SELECT * from usuaris where usuaris.idusuari = qUsuari) THEN 
+RETURN TRUE;
+END IF;
+RETURN FALSE;
+END
+$$language plpgsql;
+
+select existeix_usuari(1);
+
+
+	1.2) Fer una funció alumne_ok(qUsuari int) returns boolean
+	     Rebrà un identificador d’usuari
+	     Verificarà si existeix (crida a la funció anterior, please). Si no existeix retorna false
+	     Si l’usuari existeix mirarà si és alumne (rol ‘A’). Si no és alumne retorna false
+	     Si l’usuari és alumne mirarà si està bloquejat o no. Si està bloquejat retorna false
+	     Si l’usuari és alumne i no està bloquejat mira si està actiu o no. Si no està actiu retornarà false
+	     Si ha arribat fins aquí, retornarà true
+
+	     
+create or replace function alumne_ok(qUsuari int) returns boolean as $$
+DECLARE
+q usuaris%ROWTYPE;
+BEGIN
+RAISE NOTICE '1-AQUI LLEGA';
+IF existeix_usuari(qUsuari) = FALSE THEN RETURN FALSE;
+END IF;
+SELECT * INTO q FROM usuaris WHERE idusuari = qUsuari;
+RAISE NOTICE '2-AQUI LLEGA';
+IF q.rol != 'A' THEN RETURN FALSE;
+END IF;
+RAISE NOTICE '3-AQUI LLEGA';
+IF q.bloquejat != 0 THEN RETURN FALSE;
+END IF;
+RAISE NOTICE '4-AQUI LLEGA';
+IF q.actiu != -1 THEN RETURN FALSE;
+END IF;
+RETURN TRUE;
+END;
+$$language plpgsql;
+
+select alumne_ok(180);
+
+
+	1.3) Fer una funció existeix_tasca(qTasca int) returns boolean 
+	       Rebrà un identificador de tasca 
+	       Si la tasca no existeix retornarà false
+	       Si la tasca existeix retornarà true
+
+create or replace function existeix_tasca(qTasca int) returns boolean as $$
+begin
+PERFORM * FROM tasques WHERE tasques.id = qTasca; --UTILIZAS PERFORM CUANDO NO USAS VARAIBLE "SELECT INTO"
+IF NOT FOUND THEN RETURN FALSE;
+END IF;
+RETURN TRUE;
+END;
+$$language plpgsql;
+	       
+select existeix_tasca(9);
+
+
+	1.4) Fer una funció nota_ok(nota int) returns boolean 
+	       Rebrà un valor numèric que correspon a una qualificació 
+	       Si la nota no està entre els valors 0 i 10 retornarà false
+	       Si la nota està entre els valors 0 i 10 retornarà true
+	       
+create or replace function nota_ok(nota int) returns boolean as $$
+BEGIN 
+IF $1 BETWEEN 0 AND 10 THEN RETURN TRUE;
+END IF;
+RETURN FALSE;
+END;
+$$language plpgsql;
+
+SELECT nota_ok(3);
+	       
+   
+	1.5) Fer una funció mirar_alumne_tasca(qAlumne int, qTasca int) returns boolean 
+	       Rebrà un identificador d’usuari i un identificador de tasca 
+	       Si  l’usuari és alumne i està ok (veure funció 1.2) i té assignada la tasca qTasca retorna true. 
+       Cas contrari retornarà false
+
+-- VERSION MAS NOVATA       
+create or replace function alumne_tasca(qAlumne int, qTasca int) returns boolean as $$
+BEGIN 
+IF NOT (alumne_ok(qAlumne)) THEN
+RETURN FALSE;
+END IF;
+IF NOT EXISTS (SELECT * FROM tasques_alumnes WHERE idalumne = $1 AND idtasca = $2) 
+THEN RETURN FALSE;
+END IF;
+RETURN TRUE;
+END;
+$$language plpgsql;
+
+-- VERSION MEJORADA CON IF ANIDADOS       
+create or replace function alumne_tasca(qAlumne int, qTasca int) returns boolean as $$
+BEGIN 
+IF (alumne_ok(qAlumne)) THEN
+IF EXISTS (SELECT * FROM tasques_alumnes WHERE idalumne = $1 AND idtasca = $2) 
+THEN RETURN TRUE;
+END IF;
+END IF;
+RETURN FALSE;
+END;
+$$language plpgsql;
+
+	1.6) Fer una funció obtenir_nota_alumne_tasca(qAlumne int, qTasca int) returns int
+	       Rebrà un identificador d’usuari i un identificador de tasca 
+	       Si l’usuari no te assignada la tasca o no és ok, retorna -1 (mira de fer servir la funció 1.5)
+       Cas contrari, retornarà la nota que tingui l’usuari qAlumne a la tasca qTasca	
