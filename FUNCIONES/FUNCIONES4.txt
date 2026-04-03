@@ -116,3 +116,18 @@ $$language plpgsql;
 	       Rebrà un identificador d’usuari i un identificador de tasca 
 	       Si l’usuari no te assignada la tasca o no és ok, retorna -1 (mira de fer servir la funció 1.5)
        Cas contrari, retornarà la nota que tingui l’usuari qAlumne a la tasca qTasca	
+
+
+create or replace function obtenir_nota_alumne_tasca(qAlumne int, qTasca int) returns int as $$
+DECLARE 
+qNota int;
+BEGIN 
+IF NOT (alumne_tasca($1, $2)) THEN 
+RETURN -1;
+END IF;
+SELECT nota INTO qNota FROM tasques_alumnes WHERE idalumne = $1 AND idtasca = $2;
+RETURN qNota;
+END
+$$LANGUAGE plpgsql;
+
+select obtenir_nota_alumne_tasca(171, 1);
