@@ -131,3 +131,79 @@ END
 $$LANGUAGE plpgsql;
 
 select obtenir_nota_alumne_tasca(171, 1);
+
+
+
+2.1)Fer una funció posar_nota_tasca(qAlumne int, qTasca int, qNota int) returns int
+Rebrà un identificador d’usuari i un identificador de tasca
+Si l’usuari no és un alumne ok (veure 1.2) retornarà -1 i no farà res més
+Si la tasca no existeix retornarà -2 i no farà res més
+Si la nota no està entre 0 i 10 retornarà -3 i no farà res més
+Si l’alumne no te assignada la tasca (és a dir, no havia el registre corresponent a la taula tasques_alumnes)
+Generarà el registre corresponent a la taula tasques_alumnes amb la nota corresponent i retornarà la nota posada
+Si l’alumne té assignada la tasca (és a dir, existia el registre corresponent a la taula tasques_alumnes)
+mira si la nota existent és superior a la nota proposada. 
+Si la nota existent és superior a la nota proposada, no farà res i retorna -4 (la nota no pot empitjorar).
+Si la nota existent és inferior a la nota proposada, actualitzarà la nota i retornarà la nota posada
+Si la nota existent és igual a la nota proposada, no farà res i retorna 0
+
+create or replace function posar_nota_tasca(qAlumne int, qTasca int, qNota int) returns int as $$
+DECLARE
+aNota int;
+BEGIN
+IF NOT alumne_ok(qAlumne) THEN RETURN -1; 
+END IF;
+IF NOT  existeix_tasca(qTasca) THEN RETURN -2;
+END IF;
+IF NOT  nota_ok(qNota) THEN RETURN -3;
+END IF;
+IF NOT alumne_tasca(qAlumne, qTasca) THEN 
+INSERT INTO tasques_alumnes (idtasca, idalumne, nota) values (qTasca, qAlumne, Qnota);
+RETURN qNota;
+ELSE
+    SELECT nota INTO aNota FROM tasques_alumnes where idalumne = qAlumne;
+    IF aNota > qNota THEN RETURN -4;
+    ELSIF aNota < qNota THEN 
+    UPDATE tasques_alumnes SET nota = qNota WHERE idalumne = qAlumne AND idtasca = qTasca;
+    RETURN qNota;
+    ELSEIF aNota = qNota THEN RETURN 0;
+    END IF;
+END IF;
+END;
+$$language plpgsql;
+
+select posar_nota_tasca(175, 1, 8);
+
+
+2.2) Fer una funció posar_nota_tasca_exception(qAlumne int, qTasca int, qNota int) returns int
+Que es comporta igual que l’anterior però que quan detecta els casos erronis genera una excepció
+
+create or replace function posar_nota_tasca_exception(qAlumne int, qTasca int, qNota int) returns int as $$
+DECLARE
+aNota int;
+BEGIN
+IF NOT alumne_ok(qAlumne) THEN 
+RAISE EXCEPTION 'NO EXISTEIX L''ALUMNE %', qAlumne; 
+END IF;
+IF NOT  existeix_tasca(qTasca) THEN
+RAISE EXCEPTION 'NO EXISTEIX LA TASCA %', qTasca;
+END IF;
+IF NOT  nota_ok(qNota) THEN 
+RAISE EXCEPTION 'LA NOTA HA DE SER ENTRE 0 I 10';
+END IF;
+IF NOT alumne_tasca(qAlumne, qTasca) THEN 
+INSERT INTO tasques_alumnes (idtasca, idalumne, nota) values (qTasca, qAlumne, Qnota);
+RETURN qNota;
+ELSE
+    SELECT nota INTO aNota FROM tasques_alumnes where idalumne = qAlumne;
+    IF aNota > qNota THEN RETURN -4;
+    ELSIF aNota < qNota THEN 
+    UPDATE tasques_alumnes SET nota = qNota WHERE idalumne = qAlumne AND idtasca = qTasca;
+    RETURN qNota;
+    ELSEIF aNota = qNota THEN RETURN 0;
+    END IF;
+END IF;
+END;
+$$language plpgsql;
+
+select posar_nota_tasca_exception(175, 1, 10);
