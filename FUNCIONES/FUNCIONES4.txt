@@ -6,7 +6,7 @@
 
 CREATE OR REPLACE FUNCTION existeix_usuari(qUsuari int) returns boolean AS $$
 BEGIN 
-IF EXISTS (SELECT * from usuaris where usuaris.idusuari = qUsuari) THEN 
+IF EXISTS (SELECT * from usuaris where usuaris.idusuari = qUsuari) THEN --exists si que necesita () porque es una funcion
 RETURN TRUE;
 END IF;
 RETURN FALSE;
@@ -30,7 +30,7 @@ DECLARE
 q usuaris%ROWTYPE;
 BEGIN
 RAISE NOTICE '1-AQUI LLEGA';
-IF existeix_usuari(qUsuari) = FALSE THEN RETURN FALSE;
+IF existeix_usuari(qUsuari) = FALSE THEN RETURN FALSE; --version alternativa mejordad IF NOT existeix_usuari(...) then return false;
 END IF;
 SELECT * INTO q FROM usuaris WHERE idusuari = qUsuari;
 RAISE NOTICE '2-AQUI LLEGA';
@@ -56,7 +56,7 @@ select alumne_ok(180);
 
 create or replace function existeix_tasca(qTasca int) returns boolean as $$
 begin
-PERFORM * FROM tasques WHERE tasques.id = qTasca; --UTILIZAS PERFORM CUANDO NO USAS VARAIBLE "SELECT INTO"
+PERFORM * FROM tasques WHERE tasques.id = qTasca; --UTILIZAS PERFORM CUANDO NO USAS VARAIBLE "SELECT INTO" --PERFORM porque SELECT sin una variable declarada dará error
 IF NOT FOUND THEN RETURN FALSE;
 END IF;
 RETURN TRUE;
@@ -90,7 +90,7 @@ SELECT nota_ok(3);
 -- VERSION MAS NOVATA       
 create or replace function alumne_tasca(qAlumne int, qTasca int) returns boolean as $$
 BEGIN 
-IF NOT (alumne_ok(qAlumne)) THEN
+IF NOT alumne_ok(qAlumne) THEN
 RETURN FALSE;
 END IF;
 IF NOT EXISTS (SELECT * FROM tasques_alumnes WHERE idalumne = $1 AND idtasca = $2) 
@@ -103,7 +103,7 @@ $$language plpgsql;
 -- VERSION MEJORADA CON IF ANIDADOS       
 create or replace function alumne_tasca(qAlumne int, qTasca int) returns boolean as $$
 BEGIN 
-IF (alumne_ok(qAlumne)) THEN
+IF alumne_ok(qAlumne) THEN
 IF EXISTS (SELECT * FROM tasques_alumnes WHERE idalumne = $1 AND idtasca = $2) 
 THEN RETURN TRUE;
 END IF;
@@ -122,7 +122,7 @@ create or replace function obtenir_nota_alumne_tasca(qAlumne int, qTasca int) re
 DECLARE 
 qNota int;
 BEGIN 
-IF NOT (alumne_tasca($1, $2)) THEN 
+IF NOT alumne_tasca($1, $2) THEN 
 RETURN -1;
 END IF;
 SELECT nota INTO qNota FROM tasques_alumnes WHERE idalumne = $1 AND idtasca = $2;
